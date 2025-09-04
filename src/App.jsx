@@ -5,6 +5,7 @@ import RedditSimulator from './components/RedditSimulator';
 import SnippetsDashboard from './components/SnippetsDashboard';
 import AuthModal from './components/AuthModal';
 import SettingsModal from './components/SettingsModal';
+import ErrorBoundary from './components/ErrorBoundary';
 import { SnippetProvider, useSnippets } from './context/SnippetContext';
 
 function AppContent() {
@@ -75,9 +76,11 @@ function AppContent() {
 
 function App() {
   return (
-    <SnippetProvider>
-      <AppContent />
-    </SnippetProvider>
+    <ErrorBoundary>
+      <SnippetProvider>
+        <AppContent />
+      </SnippetProvider>
+    </ErrorBoundary>
   );
 }
 
