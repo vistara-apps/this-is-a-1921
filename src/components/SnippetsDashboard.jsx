@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
-import { Download, Trash2, ExternalLink, Crown, Filter, Search } from 'lucide-react';
+import { Download, Trash2, ExternalLink, Crown, Filter, Search, FileText, Share2, Brain } from 'lucide-react';
 import { useSnippets } from '../context/SnippetContext';
 import SnippetCard from './SnippetCard';
 import ExportButton from './ExportButton';
+import { ExportService } from '../services/exportService';
+import { OpenAIAPI } from '../services/api';
+import toast from 'react-hot-toast';
 
 function SnippetsDashboard() {
   const { snippets, removeSnippet, user, upgradeSubscription } = useSnippets();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState('all');
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [summary, setSummary] = useState('');
 
   const filteredSnippets = snippets.filter(snippet => {
     const matchesSearch = snippet.textContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -19,17 +24,76 @@ function SnippetsDashboard() {
   });
 
   const exportSnippets = () => {
-    const markdown = generateMarkdown(filteredSnippets);
-    downloadFile(markdown, 'reddit-snippets.md', 'text/markdown');
+    ExportService.exportMarkdown(filteredSnippets, {
+      includeMetadata: true,
+      groupBySubreddit: false,
+      includeTimestamps: true
+    });
+    toast.success('Markdown export downloaded!');
   };
 
   const exportPDF = () => {
     if (user.subscriptionStatus !== 'pro') {
-      alert('PDF export is a Pro feature. Upgrade to unlock!');
+      toast.error('PDF export is a Pro feature. Upgrade to unlock!');
       return;
     }
-    // PDF export logic would go here
-    alert('PDF export feature coming soon!');
+    ExportService.exportPDF(filteredSnippets, {
+      includeMetadata: true,
+      groupBySubreddit: false,
+      includeTimestamps: true
+    });
+    toast.success('PDF export downloaded!');
+  };
+
+  const exportJSON = () => {
+    if (user.subscriptionStatus !== 'pro') {
+      toast.error('JSON export is a Pro feature. Upgrade to unlock!');
+      return;
+    }
+    ExportService.exportJSON(filteredSnippets);
+    toast.success('JSON export downloaded!');
+  };
+
+  const exportCSV = () => {
+    if (user.subscriptionStatus !== 'pro') {
+      toast.error('CSV export is a Pro feature. Upgrade to unlock!');
+      return;
+    }
+    ExportService.exportCSV(filteredSnippets);
+    toast.success('CSV export downloaded!');
+  };
+
+  const createShareableLink = async () => {
+    try {
+      const shareData = await ExportService.createShareableLink(filteredSnippets);
+      navigator.clipboard.writeText(shareData.shareUrl);
+      toast.success('Shareable link copied to clipboard!');
+    } catch (error) {
+      toast.error('Failed to create shareable link');
+    }
+  };
+
+  const generateAISummary = async () => {
+    if (user.subscriptionStatus !== 'pro') {
+      toast.error('AI summarization is a Pro feature. Upgrade to unlock!');
+      return;
+    }
+
+    if (filteredSnippets.length === 0) {
+      toast.error('No snippets to summarize');
+      return;
+    }
+
+    setIsGeneratingSummary(true);
+    try {
+      const summaryText = await OpenAIAPI.summarizeSnippets(filteredSnippets);
+      setSummary(summaryText);
+      toast.success('AI summary generated!');
+    } catch (error) {
+      toast.error('Failed to generate summary. Please check your OpenAI API key.');
+    } finally {
+      setIsGeneratingSummary(false);
+    }
   };
 
   const generateMarkdown = (snippets) => {
@@ -108,7 +172,7 @@ function SnippetsDashboard() {
           </div>
 
           {/* Export Buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <ExportButton
               variant="primary"
               onClick={exportSnippets}
@@ -127,8 +191,66 @@ function SnippetsDashboard() {
             >
               Export as PDF {user.subscriptionStatus !== 'pro' && '(Pro)'}
             </ExportButton>
+
+            <ExportButton
+              variant="secondary"
+              onClick={exportJSON}
+              icon={FileText}
+              disabled={snippets.length === 0}
+              requiresPro={user.subscriptionStatus !== 'pro'}
+            >
+              Export as JSON {user.subscriptionStatus !== 'pro' && '(Pro)'}
+            </ExportButton>
+
+            <ExportButton
+              variant="secondary"
+              onClick={exportCSV}
+              icon={FileText}
+              disabled={snippets.length === 0}
+              requiresPro={user.subscriptionStatus !== 'pro'}
+            >
+              Export as CSV {user.subscriptionStatus !== 'pro' && '(Pro)'}
+            </ExportButton>
+
+            <ExportButton
+              variant="secondary"
+              onClick={createShareableLink}
+              icon={Share2}
+              disabled={snippets.length === 0}
+            >
+              Create Shareable Link
+            </ExportButton>
+
+            <ExportButton
+              variant="secondary"
+              onClick={generateAISummary}
+              icon={Brain}
+              disabled={snippets.length === 0 || isGeneratingSummary}
+              requiresPro={user.subscriptionStatus !== 'pro'}
+            >
+              {isGeneratingSummary ? 'Generating...' : 'AI Summary'} {user.subscriptionStatus !== 'pro' && '(Pro)'}
+            </ExportButton>
           </div>
         </div>
+
+        {/* AI Summary */}
+        {summary && (
+          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Brain className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-semibold text-blue-900">AI Summary</h3>
+            </div>
+            <div className="prose prose-blue max-w-none">
+              <p className="text-blue-800 whitespace-pre-wrap">{summary}</p>
+            </div>
+            <button
+              onClick={() => setSummary('')}
+              className="mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              Hide Summary
+            </button>
+          </div>
+        )}
 
         {/* Snippets Grid */}
         {filteredSnippets.length === 0 ? (

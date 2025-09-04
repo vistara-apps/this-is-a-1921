@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Reddit Snippetter",
+  "version": "1.0.0",
+  "description": "Capture, compile, and export Reddit insights effortlessly.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.reddit.com/*",
+    "https://reddit.com/*"
+  ],
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Reddit Snippetter",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.reddit.com/*", "https://reddit.com/*"],
+      "js": ["content-script.js"],
+      "css": ["content-script.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["https://www.reddit.com/*", "https://reddit.com/*"]
+    }
+  ]
+}

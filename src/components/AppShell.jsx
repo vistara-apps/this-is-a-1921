@@ -1,9 +1,9 @@
 import React from 'react';
-import { Menu, Home, Database, Settings, Crown } from 'lucide-react';
+import { Menu, Home, Database, Settings, Crown, User, LogOut } from 'lucide-react';
 import { useSnippets } from '../context/SnippetContext';
 
-function AppShell({ children, currentView, onViewChange }) {
-  const { user, snippets } = useSnippets();
+function AppShell({ children, currentView, onViewChange, user, onAuthClick, onSettingsClick }) {
+  const { snippets, logout } = useSnippets();
 
   const menuItems = [
     { id: 'simulator', icon: Home, label: 'Reddit Simulator', description: 'Practice highlighting' },
@@ -50,22 +50,52 @@ function AppShell({ children, currentView, onViewChange }) {
 
         {/* User Status */}
         <div className="border-t border-white/10 pt-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium">{user.email}</div>
-              <div className="flex items-center gap-1 text-xs">
-                {user.subscriptionStatus === 'pro' ? (
-                  <>
-                    <Crown className="w-3 h-3 text-yellow-400" />
-                    <span className="text-yellow-400">Pro</span>
-                  </>
-                ) : (
-                  <span className="text-gray-400">Free</span>
-                )}
+          {user.isAuthenticated ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">{user.email}</div>
+                  <div className="flex items-center gap-1 text-xs">
+                    {user.subscriptionStatus === 'pro' ? (
+                      <>
+                        <Crown className="w-3 h-3 text-yellow-400" />
+                        <span className="text-yellow-400">Pro</span>
+                      </>
+                    ) : (
+                      <span className="text-gray-400">Free</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={onSettingsClick}
+                    className="p-1 hover:bg-white/10 rounded transition-colors"
+                    title="Settings"
+                  >
+                    <Settings className="w-4 h-4 text-gray-400" />
+                  </button>
+                  <button
+                    onClick={logout}
+                    className="p-1 hover:bg-white/10 rounded transition-colors"
+                    title="Logout"
+                  >
+                    <LogOut className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
               </div>
             </div>
-            <Settings className="w-4 h-4 text-gray-400" />
-          </div>
+          ) : (
+            <button
+              onClick={onAuthClick}
+              className="w-full flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              <User className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-medium">Sign In</div>
+                <div className="text-xs opacity-70">Access your saved snippets</div>
+              </div>
+            </button>
+          )}
         </div>
       </div>
 
